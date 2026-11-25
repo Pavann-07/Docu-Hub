@@ -1,0 +1,45 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGODB_URL: mongodb://mongo:27017
+      REDIS_URL: redis://redis:6379
+      MONGODB_FALLBACK_TO_MOCK: "false"
+      CORS_ORIGINS: http://localhost
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/app/uploads
+      - chroma:/app/chroma_data
+    depends_on:
+      - mongo
+      - redis
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ""
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:
+  uploads:
+  chroma:
